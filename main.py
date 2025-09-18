@@ -111,8 +111,9 @@ def purchases():
             return jsonify(purchase), 201
         else:
             return jsonify({"error": "Method not allowed"}), 405
-app.run(debug=True)
 
+if __name__ == "__main__":
+    app.run(debug=True)
 
 #create and test on postman routes
 #sales - table
