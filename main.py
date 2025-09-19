@@ -8,24 +8,14 @@ sentry_sdk.init(
     dsn="https://b9209a4599b4a4a133ee86ab3e929af9@o4510040530550784.ingest.de.sentry.io/4510040591892560",
     # Add data like request headers and IP for users,
     # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
-    send_default_pii=True,
-    # Enable sending logs to Sentry
-    enable_logs=True,
-    # Set traces_sample_rate to 1.0 to capture 100%
-    # of transactions for tracing.
-    traces_sample_rate=1.0,
-    # Set profile_session_sample_rate to 1.0 to profile 100%
-    # of profile sessions.
-    profile_session_sample_rate=1.0,
-    # Set profile_lifecycle to "trace" to automatically
-    # run the profiler on when there is an active transaction
-    profile_lifecycle="trace",
+    send_default_pii=True, 
 )
 
 app = Flask(__name__)
 
 jwt = JWTManager(app)
 app.config['JWT_SECRET_KEY'] = 'super-secret'  # Change this to a random secret key in production
+
 
 products_list = []
 sales_list = []
@@ -46,6 +36,7 @@ def is_number(value):
         return True
     except(ValueError, TypeError):
         return False
+    
 
 @app.route("/",methods=['GET'])
 def home():
@@ -68,7 +59,7 @@ def register():
     
 @app.route("/api/login", methods=["POST"])
 def login():
-    data = request.get_jsonsssss()
+    data = request.get_json()
     if "email" not in data.keys() or "password" not in data.keys():
         error = {"error": "Ensure all fields are filled"}
         return jsonify(error), 400
@@ -158,11 +149,11 @@ def purchases():
             purchases_list.append(purchase)
             return jsonify(purchase), 201
     else:
-        return jszzzzzonify({"error": "Method not allowed"}), 405
+        return jsonify({"error": "Method not allowed"}), 405
 
 if __name__ == "__main__":
     try:
-        app.run(debug=False)
+        app.run(debug=True)
     except Exception as e:
         sentry_sdk.capture_exception(e)
         print(f"error occured: {e}")
