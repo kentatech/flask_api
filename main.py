@@ -22,17 +22,10 @@ sentry_sdk.init(
     profile_lifecycle="trace",
 )
 
-# Send logs directly to Sentry
-# sentry_sdk.logger.info('This is an info log message')
-# sentry_sdk.logger.warning('This is a warning message')
-# sentry_sdk.logger.error('This is an error message')
-
 app = Flask(__name__)
 
 jwt = JWTManager(app)
 app.config['JWT_SECRET_KEY'] = 'super-secret'  # Change this to a random secret key in production
-
-
 
 products_list = []
 sales_list = []
@@ -75,7 +68,7 @@ def register():
     
 @app.route("/api/login", methods=["POST"])
 def login():
-    data = request.get_json()
+    data = request.get_jsonsssss()
     if "email" not in data.keys() or "password" not in data.keys():
         error = {"error": "Ensure all fields are filled"}
         return jsonify(error), 400
@@ -127,6 +120,18 @@ def sales():
         
         if "product_id" not in data or "quantity" not in data:
             return jsonify({"error": "Ensure all fields are set: product_id, quantity"}), 400
+        elif not is_int(data["product_id"]):
+            return jsonify({"error": "product_id must be an int"}), 400
+        elif not is_number(data["quantity"]):
+            return jsonify({"error": "quantity must be a number"}), 400
+    else:
+        sale = {
+            "product_id": int(data["product_id"]),
+            "quantity": float(data["quantity"]),
+            "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+        sales_list.append(sale)
+        return jsonify(sale), 201
         
 @app.route("/api/purchases", methods=["GET", "POST"])
 @jwt_required()
@@ -153,10 +158,14 @@ def purchases():
             purchases_list.append(purchase)
             return jsonify(purchase), 201
     else:
-        return jsonify({"error": "Method not allowed"}), 405
+        return jszzzzzonify({"error": "Method not allowed"}), 405
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    try:
+        app.run(debug=False)
+    except Exception as e:
+        sentry_sdk.capture_exception(e)
+        print(f"error occured: {e}")
 
 #create and test on postman routes
 #sales - table
