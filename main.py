@@ -3,6 +3,7 @@ from flask_jwt_extended import JWTManager, create_access_token, jwt_required
 from datetime import datetime
 import sentry_sdk
 from flask_sqlalchemy import SQLAlchemy
+from models import db, Product, Sale, Purchase
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -16,9 +17,9 @@ sentry_sdk.init(
 )
 
 # Initialize SQLAlchemy
-app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://postgresql:NEWPAS4u.@localhost:5432/flask_api"
-db = SQLAlchemy()
-
+app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://postgres:NEWPAS4u.@localhost:5432/flask_api"
+db.init_app(app)
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
 
 # Configure JWT
 jwt = JWTManager(app)
@@ -90,7 +91,10 @@ def get_users():
 @jwt_required()
 def products():
     if request.method == 'GET':
-        # Logic to retrieve products
+        products = Product.query.all()
+        for prod in products:
+            data = {"id": prod.id, "name": prod.name,"buying_price": prod.buying_price, "selling_price": prod.selling_price}
+            products_list.append(data)
         return jsonify(products_list), 200
     elif request.method == 'POST':
         data =request.get_json()
@@ -98,8 +102,12 @@ def products():
             error = {"error" : "ensure all fields are filled"}
             return jsonify(error), 400
         else:
-            products_list.append(data)
-            return jsonify(data),201
+           # products_list.append(data) replaced with the below three-four lines
+           prod = Product(name=data['name'], buying_price=data['buying_price'], selling_price=data['selling_price'])
+           db.session.add(prod)
+           db.session.commit()
+           data["id"] = prod.id
+           return jsonify(data),201
     else:
         error = {"error": "Method not allowed"}
         return jsonify(error), 405
@@ -159,11 +167,16 @@ def purchases():
         return jsonify({"error": "Method not allowed"}), 405
 
 if __name__ == "__main__":
-    try:
-        app.run(debug=True)
-    except Exception as e:
-        sentry_sdk.capture_exception(e)
-        print(f"error occured: {e}")
+    with app.app_context():
+        db.create_all()
+    app.run()
+
+# if __name__ == "__main__":
+#     try:
+#         app.run(debug=True)
+#     except Exception as e:
+#         sentry_sdk.capture_exception(e)
+#         print(f"error occured: {e}")
 
 #create and test on postman routes
 #sales - table
