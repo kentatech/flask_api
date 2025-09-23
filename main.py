@@ -1,7 +1,11 @@
 from flask import Flask, jsonify, request
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required
 from datetime import datetime
 import sentry_sdk
+from flask_sqlalchemy import SQLAlchemy
+
+# Initialize Flask app
+app = Flask(__name__)
 
 # Initialize Sentry for error tracking and performance monitoring
 sentry_sdk.init(
@@ -11,18 +15,22 @@ sentry_sdk.init(
     send_default_pii=True, 
 )
 
-app = Flask(__name__)
+# Initialize SQLAlchemy
+app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://postgresql:NEWPAS4u.@localhost:5432/flask_api"
+db = SQLAlchemy()
 
+
+# Configure JWT
 jwt = JWTManager(app)
 app.config['JWT_SECRET_KEY'] = 'super-secret'  # Change this to a random secret key in production
 
-
+# In-memory data storage
 products_list = []
 sales_list = []
 purchases_list = []
 users_list = []
 
-
+# Helper functions
 def is_int(value):
     try:
         int(value)
@@ -50,7 +58,6 @@ def register():
         error = {"error": "Ensure all fields are filled"}
         return jsonify(error), 400
         #Elif expected to check mail is valid/exists, password is long, fields not empty
-
     else:
         users_list.append(data)
         #create JWT token
