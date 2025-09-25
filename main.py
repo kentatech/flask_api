@@ -3,7 +3,7 @@ from flask_jwt_extended import JWTManager, create_access_token, jwt_required
 from datetime import datetime
 import sentry_sdk
 from flask_sqlalchemy import SQLAlchemy
-from models import db, Product, Sale, Purchase
+from models import db, Product, Sale, Purchase, User
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -85,6 +85,14 @@ def login():
 
 @app.route("/api/users")
 def get_users():
+    users = User.query.all()
+    for u in users:
+      users_list.append({
+          "id":u.id,
+          "name":u.name,
+          "email":u.email,
+           "created_at": u.created_at.strftime("%Y-%m-%d %H:%M:%S") if hasattr(u, "created_at") else None
+      })
     return jsonify(users_list), 200
 
 @app.route('/api/products', methods=['GET', 'POST'])
@@ -169,7 +177,7 @@ def purchases():
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
-    app.run()
+    app.run(debug=True)
 
 # if __name__ == "__main__":
 #     try:
