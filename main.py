@@ -152,26 +152,30 @@ def sales():
 @jwt_required()
 def purchases():
     if request.method == "GET":
+        purchases = Purchase.query.all()
+        for purch in purchases:
+            data_p = {"id": purch.id, "product_id": purch.product_id, "quantity": purch.quantity, "created_at": purch.created_at.strftime("%Y-%m-%d %H:%M:%S")}
+            purchases_list.append(data_p)
         return jsonify(purchases_list), 200
-    
     elif request.method == "POST":
-        data = request.get_json()
-        if not data:
+        data_p = request.get_json()
+        if not data_p:
             return jsonify({"Error": "Request must be in JSON"}), 400
-        if "product_id" not in data or "quantity" not in data:
+        if "product_id" not in data_p or "quantity" not in data_p:
             return jsonify({"error": "Ensure all fields are set: product_id, quantity"}), 400
-        elif not is_int(data["product_id"]):
+        elif not is_int(data_p["product_id"]):
             return jsonify({"error":"product_id must be an int"}), 400
-        if not is_number(data["quantity"]):
+        elif not is_number(data_p["quantity"]):
             return jsonify({"error":"Quantity Must be a number"}), 400
-        else:
-            purchase = {
-                "product_id": int(data["product_id"]),
-                "quantity": float(data["quantity"]),
-                "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            }
-            purchases_list.append(purchase)
-            return jsonify(purchase), 201
+        
+        purch = Purchase(product_id=int(data_p["product_id"]), quantity=float(data_p["quantity"]))
+        db.session.add(purch)
+        db.session.commit()
+        data_p["id"] = purch.id
+        data_p["created_at"] = purch.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        # purchases_list.append(purchase) # commented out replaced by above five lines
+    
+        return jsonify(data_p), 201
     else:
         return jsonify({"error": "Method not allowed"}), 405
 
