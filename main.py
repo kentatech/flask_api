@@ -103,7 +103,7 @@ def products():
         for prod in products:
             data = {"id": prod.id, "name": prod.name,"buying_price": prod.buying_price, "selling_price": prod.selling_price, "stock_quantity": prod.stock_quantity}
             products_list.append(data)
-        return jsonify(products), 200
+        return jsonify(products_list), 200
     elif request.method == 'POST':
         data =request.get_json()
         if 'name' not in data or 'buying_price' not in data.keys() or 'selling_price' not in data.keys() or 'stock_quantity' not in data.keys():
@@ -111,7 +111,7 @@ def products():
             return jsonify(error), 400
         else:
            # products_list.append(data) replaced with the below three-four lines
-           prod = Product(name=data['name'], buying_price=data['buying_price'], selling_price=data['selling_price'])
+           prod = Product(name=data['name'], buying_price=data['buying_price'], selling_price=data['selling_price'], stock_quantity=data['stock_quantity'])
            db.session.add(prod)
            db.session.commit()
            data["id"] = prod.id
@@ -120,34 +120,33 @@ def products():
         error = {"error": "Method not allowed"}
         return jsonify(error), 405
     
-    
 @app.route("/api/sales", methods=["GET", "POST"])
 @jwt_required()
 def sales():
     if request.method == "GET":
-        # sales = Sale.query.all()
-        # for s in sales:
+        sales = Sale.query.all()
+        for s in sales:
+            data_s = {"id": s.id, "product_id": s.product_id, "quantity": s.quantity, "created_at": s.created_at.strftime("%Y-%m-%d %H:%M:%S")}
+            sales_list.append(data_s)
         return jsonify(sales_list), 200
-    
     elif request.method == "POST":
-        data = request.get_json()
-        if not data:
+        data_s = request.get_json()
+        if not data_s:
             return jsonify({"error": "Request must be in json"}), 400
-        
-        if "product_id" not in data or "quantity" not in data:
+        if "product_id" not in data_s or "quantity" not in data_s:
             return jsonify({"error": "Ensure all fields are set: product_id, quantity"}), 400
-        elif not is_int(data["product_id"]):
+        elif not is_int(data_s["product_id"]):
             return jsonify({"error": "product_id must be an int"}), 400
-        elif not is_number(data["quantity"]):
+        elif not is_number(data_s["quantity"]):
             return jsonify({"error": "quantity must be a number"}), 400
-    else:
-        sale = {
-            "product_id": int(data["product_id"]),
-            "quantity": float(data["quantity"]),
-            "created_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        }
-        sales_list.append(sale)
-        return jsonify(sale), 201
+        else:
+            s = Sale(product_id=int(data_s["product_id"]), quantity=float(data_s["quantity"]))
+            db.session.add(s)
+            db.session.commit()
+            data_s["id"] = s.id
+            data_s["created_at"] = s.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        # sales_list.append(sale) # commented out replaced by abovve five lines
+            return jsonify(data_s), 201
         
 @app.route("/api/purchases", methods=["GET", "POST"])
 @jwt_required()
