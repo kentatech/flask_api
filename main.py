@@ -9,12 +9,12 @@ from models import db, Product, Sale, Purchase, User
 app = Flask(__name__)
 
 # Initialize Sentry for error tracking and performance monitoring
-sentry_sdk.init(
-    dsn="https://b9209a4599b4a4a133ee86ab3e929af9@o4510040530550784.ingest.de.sentry.io/4510040591892560",
-    # Add data like request headers and IP for users,
-    # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
-    send_default_pii=True, 
-)
+# sentry_sdk.init(
+#     dsn="https://b9209a4599b4a4a133ee86ab3e929af9@o4510040530550784.ingest.de.sentry.io/4510040591892560",
+#     # Add data like request headers and IP for users,
+#     # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
+#     send_default_pii=True, 
+# )
 
 # Initialize SQLAlchemy
 app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://postgres:NEWPAS4u.@localhost:5432/flask_api"
@@ -101,12 +101,12 @@ def products():
     if request.method == 'GET':
         products = Product.query.all()
         for prod in products:
-            data = {"id": prod.id, "name": prod.name,"buying_price": prod.buying_price, "selling_price": prod.selling_price}
+            data = {"id": prod.id, "name": prod.name,"buying_price": prod.buying_price, "selling_price": prod.selling_price, "stock_quantity": prod.stock_quantity}
             products_list.append(data)
-        return jsonify(products_list), 200
+        return jsonify(products), 200
     elif request.method == 'POST':
         data =request.get_json()
-        if 'name' not in data or 'buying_price' not in data.keys() or 'selling_price' not in data.keys():
+        if 'name' not in data or 'buying_price' not in data.keys() or 'selling_price' not in data.keys() or 'stock_quantity' not in data.keys():
             error = {"error" : "ensure all fields are filled"}
             return jsonify(error), 400
         else:
@@ -125,6 +125,8 @@ def products():
 @jwt_required()
 def sales():
     if request.method == "GET":
+        # sales = Sale.query.all()
+        # for s in sales:
         return jsonify(sales_list), 200
     
     elif request.method == "POST":
