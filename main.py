@@ -9,17 +9,17 @@ from models import db, Product, Sale, Purchase, User
 app = Flask(__name__)
 
 # Initialize Sentry for error tracking and performance monitoring
-# sentry_sdk.init(
-#     dsn="https://b9209a4599b4a4a133ee86ab3e929af9@o4510040530550784.ingest.de.sentry.io/4510040591892560",
-#     # Add data like request headers and IP for users,
-#     # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
-#     send_default_pii=True, 
-# )
+sentry_sdk.init(
+    dsn="https://b9209a4599b4a4a133ee86ab3e929af9@o4510040530550784.ingest.de.sentry.io/4510040591892560",
+    # Add data like request headers and IP for users,
+    # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
+    send_default_pii=True, 
+)
 
 # Initialize SQLAlchemy
 app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://postgres:NEWPAS4u.@localhost:5432/flask_api"
 db.init_app(app)
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True #
 
 # Configure JWT
 jwt = JWTManager(app)
@@ -184,12 +184,6 @@ if __name__ == "__main__":
         db.create_all()
     app.run(debug=True)
 
-# if __name__ == "__main__":
-#     try:
-#         app.run(debug=True)
-#     except Exception as e:
-#         sentry_sdk.capture_exception(e)
-#         print(f"error occured: {e}")
 
 #create and test on postman routes
 #sales - table
