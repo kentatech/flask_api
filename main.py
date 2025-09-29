@@ -38,7 +38,9 @@ def is_number(value):
         return True
     except(ValueError, TypeError):
         return False
-    
+# @app.route("")   
+
+
 @app.route("/",methods=['GET'])
 def home():
      res = {"flask api version": "1.0.0"}
@@ -46,14 +48,16 @@ def home():
 
 @app.route("/api/register", methods=["POST"])
 def register():
-    users_list = []
     data = request.get_json()
     if "name" not in data.keys() or "email" not in data.keys() or "password" not in data.keys():
         error = {"error": "Ensure all fields are filled"}
         return jsonify(error), 400
         #Elif expected to check mail is valid/exists, password is long, fields not empty
     else:
-        users_list.append(data)
+        usrs = User(username=data['name'], email=data['email'], password=data['password'])
+        db.session.add(usrs)
+        db.session.commit()
+        data["id"] = usrs.id
         #create JWT token
         token = create_access_token(identity=data["email"])
         return jsonify({"token": token}), 201
@@ -61,21 +65,18 @@ def register():
 @app.route("/api/login", methods=["POST"])
 def login():
     data = request.get_json()
-    users_list = []
     if "email" not in data.keys() or "password" not in data.keys():
         error = {"error": "Ensure all fields are filled"}
         return jsonify(error), 400
     else:
-        for user in users_list:
-            if user["email"] == data["email"] and user["password"] == data["password"]:
-                #create JWT token
-                token = create_access_token(identity = data["email"])
-    
-                return jsonify({"token":token}), 200
-            else:
-                 pass
-        error = {"error": "Invalid email or password"}
-        return jsonify(error), 401
+        usr = User.query.filter_by(email=data["email"], password=data["password"]).first() 
+        if usr is None:
+            error = {"error": "Invalid email or password"}
+            return jsonify(error), 401
+        else:
+            token = create_access_token(identity = data["email"])
+            return jsonify({"token": token}), 200  
+       
 
 @app.route("/api/users")
 def get_users():
