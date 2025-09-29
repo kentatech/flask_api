@@ -23,12 +23,6 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True
 jwt = JWTManager(app)
 app.config['JWT_SECRET_KEY'] = 'super-secret'  # Change this to a random secret key in production
 
-# In-memory data storage
-products_list = []
-sales_list = []
-purchases_list = []
-users_list = []
-
 # Helper functions
 def is_int(value):
     try:
@@ -44,7 +38,6 @@ def is_number(value):
     except(ValueError, TypeError):
         return False
     
-
 @app.route("/",methods=['GET'])
 def home():
      res = {"flask api version": "1.0.0"}
@@ -52,6 +45,7 @@ def home():
 
 @app.route("/api/register", methods=["POST"])
 def register():
+    users_list = []
     data = request.get_json()
     if "name" not in data.keys() or "email" not in data.keys() or "password" not in data.keys():
         error = {"error": "Ensure all fields are filled"}
@@ -66,6 +60,7 @@ def register():
 @app.route("/api/login", methods=["POST"])
 def login():
     data = request.get_json()
+    users_list = []
     if "email" not in data.keys() or "password" not in data.keys():
         error = {"error": "Ensure all fields are filled"}
         return jsonify(error), 400
@@ -83,15 +78,21 @@ def login():
 
 @app.route("/api/users")
 def get_users():
-    users = User.query.all()
-    for u in users:
-        data_u = {"id": u.id, "name": u.name, "email": u.email, "created_at": u.created_at.strftime("%Y-%m-%d %H:%M:%S") if hasattr(u, "created_at") else None}
-        users_list.append(data_u)
-    return jsonify(users_list), 200
+    if request.method == "GET":
+        users = User.query.all()
+        for u in users:
+             data_u = {"id": u.id, "name": u.name, "email": u.email, "created_at": u.created_at.strftime("%Y-%m-%d %H:%M:%S") if hasattr(u, "created_at") else None}
+             users_list=[]
+             users_list.append(data_u)
+        return jsonify(users_list), 200
+    else:
+        error = {"error": "Method not allowed"}
+        return jsonify(error), 405
 
 @app.route('/api/products', methods=['GET', 'POST'])
 @jwt_required()
 def products():
+    products_list = []
     if request.method == 'GET':
         products = Product.query.all()
         for prod in products:
@@ -117,6 +118,7 @@ def products():
 @app.route("/api/sales", methods=["GET", "POST"])
 @jwt_required()
 def sales():
+    sales_list = []
     if request.method == "GET":
         sales = Sale.query.all()
         for s in sales:
@@ -133,18 +135,21 @@ def sales():
             return jsonify({"error": "product_id must be an int"}), 400
         elif not is_number(data_s["quantity"]):
             return jsonify({"error": "quantity must be a number"}), 400
-        else:
-            s = Sale(product_id=int(data_s["product_id"]), quantity=float(data_s["quantity"]))
-            db.session.add(s)
-            db.session.commit()
-            data_s["id"] = s.id
-            data_s["created_at"] = s.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        s = Sale(product_id=int(data_s["product_id"]), quantity=float(data_s["quantity"]))
+        db.session.add(s)
+        db.session.commit()
+        data_s["id"] = s.id
+        data_s["created_at"] = s.created_at.strftime("%Y-%m-%d %H:%M:%S")
         # sales_list.append(sale) # commented out replaced by abovve five lines
-            return jsonify(data_s), 201
+        return jsonify(data_s), 201
+    else:
+        error = {"error": "Method not allowed"}
+        return jsonify(error), 405
         
 @app.route("/api/purchases", methods=["GET", "POST"])
 @jwt_required()
 def purchases():
+    purchases_list = []
     if request.method == "GET":
         purchases = Purchase.query.all()
         for purch in purchases:
