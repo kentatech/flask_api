@@ -94,11 +94,11 @@ def get_users():
 @app.route('/api/products', methods=['GET', 'POST'])
 @jwt_required()
 def products():
-    products_list = []
     if request.method == 'GET':
         products = Product.query.all()
         for prod in products:
             data = {"id": prod.id, "name": prod.name,"buying_price": prod.buying_price, "selling_price": prod.selling_price, "stock_quantity": prod.stock_quantity}
+            products_list = []
             products_list.append(data)
         return jsonify(products_list), 200
     elif request.method == 'POST':
@@ -120,11 +120,11 @@ def products():
 @app.route("/api/sales", methods=["GET", "POST"])
 @jwt_required()
 def sales():
-    sales_list = []
     if request.method == "GET":
         sales = Sale.query.all()
         for s in sales:
             data_s = {"id": s.id, "product_id": s.product_id, "quantity": s.quantity, "created_at": s.created_at.strftime("%Y-%m-%d %H:%M:%S")}
+            sales_list = []
             sales_list.append(data_s)
         return jsonify(sales_list), 200
     elif request.method == "POST":
@@ -151,11 +151,11 @@ def sales():
 @app.route("/api/purchases", methods=["GET", "POST"])
 @jwt_required()
 def purchases():
-    purchases_list = []
     if request.method == "GET":
         purchases = Purchase.query.all()
         for purch in purchases:
             data_p = {"id": purch.id, "product_id": purch.product_id, "quantity": purch.quantity, "created_at": purch.created_at.strftime("%Y-%m-%d %H:%M:%S")}
+            purchases_list = []
             purchases_list.append(data_p)
         return jsonify(purchases_list), 200
     elif request.method == "POST":
