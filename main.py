@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required
 import sentry_sdk
 from models import db, Product, Sale, Purchase, User
+# from configs.base_configs import Development
 
 # Initialize Flask app
 app = Flask(__name__)
