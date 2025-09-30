@@ -49,12 +49,15 @@ def home():
 @app.route("/api/register", methods=["POST"])
 def register():
     data = request.get_json()
-    if "name" not in data.keys() or "email" not in data.keys() or "password" not in data.keys():
+    if "username" not in data.keys() or "email" not in data.keys() or "password" not in data.keys():
         error = {"error": "Ensure all fields are filled"}
         return jsonify(error), 400
-        #Elif expected to check mail is valid/exists, password is long, fields not empty
+    elif User.query.filter_by(email=data["email"]).first() is not None:
+        error = {"error": "User with that email already exists"}
+        return jsonify(error), 409
+        #Elif expected to check mail is valid/exists
     else:
-        usrs = User(username=data['name'], email=data['email'], password=data['password'])
+        usrs = User(username=data['username'], email=data['email'], password=data['password'])
         db.session.add(usrs)
         db.session.commit()
         data["id"] = usrs.id
