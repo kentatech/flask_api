@@ -206,4 +206,5 @@ if __name__ == "__main__":
 # pip install flask-jwt-extended
 #Install slack + sentry integration
 #Create a sentry account and a project
-#Integrate sentry with flask    
+#Integrate sentry with flask 
+# add unit tests in a file called mytests.py   
