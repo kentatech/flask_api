@@ -8,3 +8,4 @@ class Development(Base):
     POSTGRES_USER = os.environ.get("POSTGRES")
     POSTGRES_PASSWORD = os.environ.get("NEWPAS4u.")
     POSTGRES_DB = os.environ.get("flask_api")
+
