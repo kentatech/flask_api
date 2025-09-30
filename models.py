@@ -9,7 +9,6 @@ class Product(db.Model):
     name = db.Column(db.String(80), nullable=False)
     buying_price = db.Column(db.Float, nullable=False)
     selling_price = db.Column(db.Float, nullable=False)
-    stock_quantity = db.Column(db.Float, nullable=False, default= 1)
 
 class Sale(db.Model):
     __tablename__ = "sales"

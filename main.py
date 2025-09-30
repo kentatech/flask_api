@@ -100,18 +100,18 @@ def products():
     if request.method == 'GET':
         products = Product.query.all()
         for prod in products:
-            data = {"id": prod.id, "name": prod.name,"buying_price": prod.buying_price, "selling_price": prod.selling_price, "stock_quantity": prod.stock_quantity}
+            data = {"id": prod.id, "name": prod.name,"buying_price": prod.buying_price, "selling_price": prod.selling_price}
             products_list = []
             products_list.append(data)
         return jsonify(products_list), 200
     elif request.method == 'POST':
         data =request.get_json()
-        if 'name' not in data or 'buying_price' not in data.keys() or 'selling_price' not in data.keys() or 'stock_quantity' not in data.keys():
+        if 'name' not in data or 'buying_price' not in data.keys() or 'selling_price' not in data.keys():
             error = {"error" : "ensure all fields are filled"}
             return jsonify(error), 400
         else:
            # products_list.append(data) replaced with the below three-four lines
-           prod = Product(name=data['name'], buying_price=data['buying_price'], selling_price=data['selling_price'], stock_quantity=data['stock_quantity'])
+           prod = Product(name=data['name'], buying_price=data['buying_price'], selling_price=data['selling_price'])
            db.session.add(prod)
            db.session.commit()
            data["id"] = prod.id
