@@ -2,27 +2,36 @@ from flask import Flask, jsonify, request
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required
 import sentry_sdk
 from models import db, Product, Sale, Purchase, User
-# from configs.base_configs import Development
+from configs.base_configs import Development
+import os
+from dotenv import load_dotenv
+
 
 # Initialize Flask app
 app = Flask(__name__)
 
-# Initialize Sentry for error tracking and performance monitoring
+#load env variables
+load_dotenv()
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+
+# Set up configurations
+app_config = Development()
+app.config.from_object(app_config)
+
+
+# Initialize Sentry for error tracking
 sentry_sdk.init(
-    dsn="https://b9209a4599b4a4a133ee86ab3e929af9@o4510040530550784.ingest.de.sentry.io/4510040591892560",
-    # Add data like request headers and IP for users,
-    # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
-    send_default_pii=True, 
+    dsn=os.getenv("SENTRY_DSN"),
+    traces_sample_rate=1.0
 )
 
 # Initialize SQLAlchemy
-app.config['SQLALCHEMY_DATABASE_URI'] = "postgresql://postgres:NEWPAS4u.@localhost:5432/flask_api"
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 db.init_app(app)
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = True 
 
 # Configure JWT
 jwt = JWTManager(app)
-app.config['JWT_SECRET_KEY'] = 'super-secret'  # Change this to a random secret key in production
+app.config['JWT_SECRET_KEY'] = os.getenv("JWT_SECRET_KEY")  # Change this to a random secret key in production
 
 # Helper functions
 def is_int(value):
