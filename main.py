@@ -95,7 +95,7 @@ def get_users():
     if request.method == "GET":
         users = User.query.all()
         for u in users:
-             data_u = {"id": u.id, "name": u.name, "email": u.email, "created_at": u.created_at.strftime("%Y-%m-%d %H:%M:%S") if hasattr(u, "created_at") else None}
+             data_u = {"id": u.id, "username": u.username, "email": u.email, "created_at": u.created_at.strftime("%Y-%m-%d %H:%M:%S") if hasattr(u, "created_at") else None}
              users_list=[]
              users_list.append(data_u)
         return jsonify(users_list), 200
