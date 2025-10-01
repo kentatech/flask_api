@@ -6,7 +6,6 @@ from configs.base_configs import Development
 import os 
 from dotenv import load_dotenv 
 
-
 # Initialize Flask app
 app = Flask(__name__)
 
