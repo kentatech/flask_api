@@ -91,10 +91,14 @@ def login():
 def get_users():
     if request.method == "GET":
         users = User.query.all()
-        users_list=[]
-        for u in users:
-             data_u = {"id": u.id, "username": u.username, "email": u.email}
-             users_list.append(data_u)
+        users_list = [
+        {
+            "id": user.id,
+            "username": user.username,
+            "email": user.email
+        }
+        for user in users
+]
         return jsonify(users_list), 200
     else:
         error = {"error": "Method not allowed"}
