@@ -3,8 +3,8 @@ from flask_jwt_extended import JWTManager, create_access_token, jwt_required
 import sentry_sdk
 from models import db, Product, Sale, Purchase, User
 from configs.base_configs import Development
-import os
-from dotenv import load_dotenv
+import os 
+from dotenv import load_dotenv 
 
 
 # Initialize Flask app
@@ -12,7 +12,9 @@ app = Flask(__name__)
 
 #load env variables
 load_dotenv()
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+
+#secret key
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 
 # Set up configurations
 app_config = Development()
@@ -21,17 +23,16 @@ app.config.from_object(app_config)
 
 # Initialize Sentry for error tracking
 sentry_sdk.init(
-    dsn=os.getenv("SENTRY_DSN"),
-    traces_sample_rate=1.0
+    dsn=os.environ.get('SENTRY_DSN')
 )
 
 # Initialize SQLAlchemy
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 db.init_app(app)
 
 # Configure JWT
+app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')
 jwt = JWTManager(app)
-app.config['JWT_SECRET_KEY'] = os.getenv("JWT_SECRET_KEY")  # Change this to a random secret key in production
 
 # Helper functions
 def is_int(value):
@@ -47,12 +48,10 @@ def is_number(value):
         return True
     except(ValueError, TypeError):
         return False
-# @app.route("")   
-
 
 @app.route("/",methods=['GET'])
 def home():
-     res = {"flask api version": "1.0.0"}
+     res = {"flask api version": "2.0.0"}
      return jsonify(res), 200
 
 @app.route("/api/register", methods=["POST"])
@@ -94,9 +93,9 @@ def login():
 def get_users():
     if request.method == "GET":
         users = User.query.all()
+        users_list=[]
         for u in users:
-             data_u = {"id": u.id, "username": u.username, "email": u.email, "created_at": u.created_at.strftime("%Y-%m-%d %H:%M:%S") if hasattr(u, "created_at") else None}
-             users_list=[]
+             data_u = {"id": u.id, "username": u.username, "email": u.email}
              users_list.append(data_u)
         return jsonify(users_list), 200
     else:
@@ -108,10 +107,11 @@ def get_users():
 def products():
     if request.method == 'GET':
         products = Product.query.all()
+        products_list = []
         for prod in products:
             data = {"id": prod.id, "name": prod.name,"buying_price": prod.buying_price, "selling_price": prod.selling_price}
-            products_list = []
             products_list.append(data)
+            print(products)
         return jsonify(products_list), 200
     elif request.method == 'POST':
         data =request.get_json()
@@ -134,9 +134,9 @@ def products():
 def sales():
     if request.method == "GET":
         sales = Sale.query.all()
+        sales_list = []
         for s in sales:
             data_s = {"id": s.id, "product_id": s.product_id, "quantity": s.quantity, "created_at": s.created_at.strftime("%Y-%m-%d %H:%M:%S")}
-            sales_list = []
             sales_list.append(data_s)
         return jsonify(sales_list), 200
     elif request.method == "POST":
@@ -165,9 +165,9 @@ def sales():
 def purchases():
     if request.method == "GET":
         purchases = Purchase.query.all()
+        purchases_list = []
         for purch in purchases:
             data_p = {"id": purch.id, "product_id": purch.product_id, "quantity": purch.quantity, "created_at": purch.created_at.strftime("%Y-%m-%d %H:%M:%S")}
-            purchases_list = []
             purchases_list.append(data_p)
         return jsonify(purchases_list), 200
     elif request.method == "POST":
