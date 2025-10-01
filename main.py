@@ -88,7 +88,6 @@ def login():
             token = create_access_token(identity = data["email"])
             return jsonify({"token": token}), 200  
        
-
 @app.route("/api/users")
 def get_users():
     if request.method == "GET":
@@ -107,11 +106,15 @@ def get_users():
 def products():
     if request.method == 'GET':
         products = Product.query.all()
-        products_list = []
-        for prod in products:
-            data = {"id": prod.id, "name": prod.name,"buying_price": prod.buying_price, "selling_price": prod.selling_price}
-            products_list.append(data)
-            print(products)
+        products_list = [
+        {
+            "id": prod.id,
+            "name": prod.name,
+            "buying_price": prod.buying_price,
+            "selling_price": prod.selling_price
+        }
+        for prod in products
+          ]
         return jsonify(products_list), 200
     elif request.method == 'POST':
         data =request.get_json()
@@ -134,10 +137,15 @@ def products():
 def sales():
     if request.method == "GET":
         sales = Sale.query.all()
-        sales_list = []
-        for s in sales:
-            data_s = {"id": s.id, "product_id": s.product_id, "quantity": s.quantity, "created_at": s.created_at.strftime("%Y-%m-%d %H:%M:%S")}
-            sales_list.append(data_s)
+        sales_list = [
+        {
+            "id": sale.id,
+            "product_id": sale.product_id,
+            "quantity": sale.quantity,
+            "created_at": sale.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        }
+        for sale in sales
+      ]
         return jsonify(sales_list), 200
     elif request.method == "POST":
         data_s = request.get_json()
@@ -165,10 +173,15 @@ def sales():
 def purchases():
     if request.method == "GET":
         purchases = Purchase.query.all()
-        purchases_list = []
-        for purch in purchases:
-            data_p = {"id": purch.id, "product_id": purch.product_id, "quantity": purch.quantity, "created_at": purch.created_at.strftime("%Y-%m-%d %H:%M:%S")}
-            purchases_list.append(data_p)
+        purchases_list = [
+        {
+            "id": purch.id,
+            "product_id": purch.product_id,
+            "quantity": purch.quantity,
+            "created_at": purch.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        }
+        for purch in purchases
+        ]
         return jsonify(purchases_list), 200
     elif request.method == "POST":
         data_p = request.get_json()
