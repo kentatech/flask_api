@@ -2,3 +2,4 @@
 .env
 configs/
 __pycache__/
+.gitignore/
