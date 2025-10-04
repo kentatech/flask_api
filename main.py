@@ -86,20 +86,12 @@ def login():
         else:
             token = create_access_token(identity = data["email"])
             return jsonify({"token": token}), 200  
-       
+
 @app.route("/api/users")
 def get_users():
     if request.method == "GET":
         users = User.query.all()
-        users_list = [
-        {
-            "id": user.id,
-            "username": user.username,
-            "email": user.email
-        }
-        for user in users
-]
-        return jsonify(users_list), 200
+        return jsonify([user.to_dict() for user in users]), 200
     else:
         error = {"error": "Method not allowed"}
         return jsonify(error), 405
@@ -109,16 +101,7 @@ def get_users():
 def products():
     if request.method == 'GET':
         products = Product.query.all()
-        products_list = [
-        {
-            "id": prod.id,
-            "name": prod.name,
-            "buying_price": prod.buying_price,
-            "selling_price": prod.selling_price
-        }
-        for prod in products
-          ]
-        return jsonify(products_list), 200
+        return jsonify([prod.to_dict() for prod in products]), 200
     elif request.method == 'POST':
         data =request.get_json()
         if 'name' not in data or 'buying_price' not in data.keys() or 'selling_price' not in data.keys():
@@ -140,16 +123,7 @@ def products():
 def sales():
     if request.method == "GET":
         sales = Sale.query.all()
-        sales_list = [
-        {
-            "id": sale.id,
-            "product_id": sale.product_id,
-            "quantity": sale.quantity,
-            "created_at": sale.created_at.strftime("%Y-%m-%d %H:%M:%S")
-        }
-        for sale in sales
-      ]
-        return jsonify(sales_list), 200
+        return jsonify([sale.to_dict() for sale in sales]), 200
     elif request.method == "POST":
         data_s = request.get_json()
         if not data_s:
@@ -176,16 +150,7 @@ def sales():
 def purchases():
     if request.method == "GET":
         purchases = Purchase.query.all()
-        purchases_list = [
-        {
-            "id": purch.id,
-            "product_id": purch.product_id,
-            "quantity": purch.quantity,
-            "created_at": purch.created_at.strftime("%Y-%m-%d %H:%M:%S")
-        }
-        for purch in purchases
-        ]
-        return jsonify(purchases_list), 200
+        return jsonify([purch.to_dict() for purch in purchases]), 200
     elif request.method == "POST":
         data_p = request.get_json()
         if not data_p:
