@@ -3,34 +3,27 @@ from flask_jwt_extended import JWTManager, create_access_token, jwt_required
 import sentry_sdk
 from models import db, Product, Sale, Purchase, User
 from configs.base_configs import Development
-import os 
 from dotenv import load_dotenv 
-
-# Initialize Flask app
-app = Flask(__name__)
 
 #load env variables
 load_dotenv()
 
-#secret key
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+# Initialize Flask app
+app = Flask(__name__)
 
 # Set up configurations
 app_config = Development()
 app.config.from_object(app_config)
 
-
 # Initialize Sentry for error tracking
 sentry_sdk.init(
-    dsn=os.environ.get('SENTRY_DSN')
+    dsn=app.config.get('SENTRY_DSN')
 )
 
 # Initialize SQLAlchemy
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 db.init_app(app)
 
 # Configure JWT
-app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')
 jwt = JWTManager(app)
 
 # Helper functions
