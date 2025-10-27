@@ -93,7 +93,7 @@ def get_users():
         return jsonify(error), 405
 
 @app.route('/api/products', methods=['GET', 'POST'])
-@jwt_required()
+# @jwt_required()
 def products():
     if request.method == 'GET':
         products = Product.query.all()

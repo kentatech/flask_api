@@ -6,22 +6,61 @@
         <title>Document</title>
     </head>
     <body>
+        <div id="app">
         <table>
             <thead>
                 <tr>
+                    <th>ID</th>
                     <th>Product Name</th>
-                    <th>Price</th>
-                    <th>Description</th>
+                    <th>Buying Price</th>
+                    <th>Selling Price</th>
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="product in products">
-                    <td>{{ product["id"] }}</td>
-                    <td>{{ product["name"] }}</td>
-                    <td>{{ product.description }}</td>
+                <tr v-for="product in products" key="product.id">
+                    <td>{{product["id"]}}</td>
+                    <td>{{product["name"]}}</td>
+                    <td>{{product["buying_price"]}}</td>
+                    <td>{{product["selling_price"]}}</td>
                 </tr>
             </tbody>
         </table>
-        
+        </div>
+        <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.7.16/vue.min.js"
+            integrity="sha512-Wx8niGbPNCD87mSuF0sBRytwW2+2ZFr7HwVDF8krCb3egstCc4oQfig+/cfg2OHd82KcUlOYxlSDAqdHqK5TCw=="
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"
+        ></script>
+        <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.7.8/axios.js"
+            integrity="sha512-+dJa1RvuE8/HFftifMtr7hqixdEkb/DizfXUZAA0pyZeVdNnyZyKy9RnIWi0JSWUznbCNbaQNn0E6nbtrdL+9g=="
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"
+        ></script>
+        <script>
+            new Vue({
+                el: '#app',
+                data: {
+                    products: []
+                },
+                methods: {
+                    fetchProducts() {
+                        axios.get('http://127.0.0.1:5000/api/products')
+                            .then(response => {
+                                this.products = response.data;
+                                console.log('Full response:', response.data);
+                                // console.log('Products fetched successfully:', this.products);
+                            })
+                            .catch(error => {
+                                console.error('Error fetching products:', error);
+                            });
+                    }
+                },
+                mounted() {
+                    this.fetchProducts();
+                }   
+            });
+        </script>
     </body>
 </html>
