@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required
 # import sentry_sdk
+from flask_cors import CORS
 from models import db, Product, Sale, Purchase, User
 from configs.base_configs import Development
 from dotenv import load_dotenv 
@@ -10,6 +11,7 @@ load_dotenv()
 
 # Initialize Flask app
 app = Flask(__name__)
+CORS(app)
 
 # Set up configurations
 app_config = Development()

@@ -7,13 +7,15 @@
 </head>
 <body>
      <div id="app">
-        <form action="" class="form" style="display: flex; flex-direction: column; width: 300px; margin: auto; gap: 10px; margin-top: 50px;">
+        <form  class="form" id="form" name="form" @submit.prevent="loginUser" style="display: flex; flex-direction: column; width: 300px; margin: auto; gap: 10px; margin-top: 50px;">
             <input type="email" v-model="email" placeholder="Enter your email">
             <br/>
             <input type="password" v-model="password" placeholder="Enter your password">
             <br/>
             <button @click.prevent="loginUser">Login</button>
+            <p v-if="message" style="color: red;">Email and password are required.</p>
         </form>
+        
     </div>
      <script
             src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.7.16/vue.min.js"
@@ -37,18 +39,23 @@
             },
             methods: {
                 loginUser() {
-                    if(this.email === '' || this.password === '') {
+                    if(!this.email || !this.password) {
                         this.message = true;
                     }
                     else {
                         alert(this.email + ' ' + this.password);
-                        resp = axios.post('https://127.0.0.1:5500/login', {
+                        axios.post('http://127.0.0.1:5000/api/login', {
                             email: this.email,
                             password: this.password
-                            //try catch error handling
                         })
-                        console.log(resp);
-                        alert(resp.data.access_token);
+                        .then(resp => {
+                            console.log(resp);
+                            alert(resp.data.token);
+                        })
+                        .catch(error => {
+                            console.error('Login error:', error);
+                            alert('Login failed: ' + (error.response ? error.response.data.error : 'Unknown error'));
+                        });
                     }
 
                 }
