@@ -3,63 +3,68 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Document</title>
+        <title>Products Page</title>
+        <link rel="stylesheet" href="https://cdn.datatables.net/2.3.4/css/dataTables.dataTables.css" />
     </head>
     <body>
         <div id="app">
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Product Name</th>
-                    <th>Buying Price</th>
-                    <th>Selling Price</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr v-for="product in products" key="product.id">
-                    <td>{{product["id"]}}</td>
-                    <td>{{product["name"]}}</td>
-                    <td>{{product["buying_price"]}}</td>
-                    <td>{{product["selling_price"]}}</td>
-                </tr>
-            </tbody>
-        </table>
+            <table class="display" id="myTable" border="5" width="70%">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Product Name</th>
+                        <th>Buying Price</th>
+                        <th>Selling Price</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="product in products" :key="product['id']">
+                        <td>{{product["id"]}}</td>
+                        <td>{{product["name"]}}</td>
+                        <td>{{product["buying_price"]}}</td>
+                        <td>{{product["selling_price"]}}</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
+
         <script
-            src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.7.16/vue.min.js"
-            integrity="sha512-Wx8niGbPNCD87mSuF0sBRytwW2+2ZFr7HwVDF8krCb3egstCc4oQfig+/cfg2OHd82KcUlOYxlSDAqdHqK5TCw=="
+            src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"
+            integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g=="
             crossorigin="anonymous"
             referrerpolicy="no-referrer"
         ></script>
-        <script
-            src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.7.8/axios.js"
-            integrity="sha512-+dJa1RvuE8/HFftifMtr7hqixdEkb/DizfXUZAA0pyZeVdNnyZyKy9RnIWi0JSWUznbCNbaQNn0E6nbtrdL+9g=="
-            crossorigin="anonymous"
-            referrerpolicy="no-referrer"
-        ></script>
+        <script src="//cdn.datatables.net/2.3.4/js/dataTables.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.7.16/vue.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.7.8/axios.min.js"></script>
         <script>
             new Vue({
-                el: '#app',
+                el: "#app",
                 data: {
-                    products: []
+                    products: [],
                 },
                 methods: {
                     fetchProducts() {
-                        axios.get('http://127.0.0.1:5000/api/products')
-                            .then(response => {
-                                this.products = response.data;
-                                console.log('Full response:', response.data);
-                                // console.log('Products fetched successfully:', this.products);
-                            })
-                            .catch(error => {
-                                console.error('Error fetching products:', error);
+                        axios
+                        .get("http://127.0.0.1:5000/api/products")
+                        .then((response) => {
+                            this.products = response.data;
+                            console.log("Full response:", response.data);
+                            this.$nextTick(() => {
+                                if ($.fn.DataTable.isDataTable("#myTable")) {
+                                    $("#myTable").DataTable().destroy();
+                                }
+                                $("#myTable").DataTable();
                             });
-                    }
+                        })
+                        .catch((error) => {
+                            console.error("Error fetching products:", error);
+                        });
+                    },
                 },
                 mounted() {
                     this.fetchProducts();
-                }   
+                },
             });
         </script>
     </body>

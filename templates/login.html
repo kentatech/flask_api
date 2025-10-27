@@ -1,69 +1,81 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-     <div id="app">
-        <form  class="form" id="form" name="form" @submit.prevent="loginUser" style="display: flex; flex-direction: column; width: 300px; margin: auto; gap: 10px; margin-top: 50px;">
-            <input type="email" v-model="email" placeholder="Enter your email">
-            <br/>
-            <input type="password" v-model="password" placeholder="Enter your password">
-            <br/>
-            <button @click.prevent="loginUser">Login</button>
-            <p v-if="message" style="color: red;">Email and password are required.</p>
-        </form>
-        
-    </div>
-     <script
-            src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.7.16/vue.min.js"
-            integrity="sha512-Wx8niGbPNCD87mSuF0sBRytwW2+2ZFr7HwVDF8krCb3egstCc4oQfig+/cfg2OHd82KcUlOYxlSDAqdHqK5TCw=="
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Login Page</title>
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+            integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
             crossorigin="anonymous"
-            referrerpolicy="no-referrer"
-        ></script>
+        />
+    </head>
+    <body>
+        <div id="app">
+            <form
+                class="form"
+                id="form"
+                name="form"
+                @submit.prevent="loginUser"
+                style="display: flex; flex-direction: column; width: 300px; margin: auto; gap: 10px; margin-top: 50px"
+            >
+                <input type="email" v-model="email" placeholder="Enter your email" />
+                <br />
+                <input type="password" v-model="password" placeholder="Enter your password" />
+                <br />
+                <button @click.prevent="loginUser">Login</button>
+                <p v-if="message" style="color: red">Email and password are required.</p>
+            </form>
+        </div>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.7.7/vue.min.js"></script>
         <script
             src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.7.8/axios.js"
             integrity="sha512-+dJa1RvuE8/HFftifMtr7hqixdEkb/DizfXUZAA0pyZeVdNnyZyKy9RnIWi0JSWUznbCNbaQNn0E6nbtrdL+9g=="
             crossorigin="anonymous"
             referrerpolicy="no-referrer"
         ></script>
-    <script>
-        new Vue({
-            el: '#app',
-            data: {
-                email: '',
-                password: '',
-                message: false
-            },
-            methods: {
-                loginUser() {
-                    if(!this.email || !this.password) {
-                        this.message = true;
-                    }
-                    else {
-                        alert(this.email + ' ' + this.password);
-                        axios.post('http://127.0.0.1:5000/api/login', {
-                            email: this.email,
-                            password: this.password
-                        })
-                        .then(resp => {
-                            console.log(resp);
-                            alert(resp.data.token);
-                        })
-                        .catch(error => {
-                            console.error('Login error:', error);
-                            alert('Login failed: ' + (error.response ? error.response.data.error : 'Unknown error'));
-                        });
-                    }
-
-                }
-            },
-            mounted() {
-                console.log('Vue is mounted for login page');
-            }
-        });
-    </script>
-</body>
+        <script
+            src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+            crossorigin="anonymous"
+        ></script>
+        <script>
+            new Vue({
+                el: "#app",
+                data: {
+                    email: "",
+                    password: "",
+                    message: false,
+                },
+                methods: {
+                    loginUser() {
+                        if (!this.email || !this.password) {
+                            this.message = true;
+                        } else {
+                            alert(this.email + " " + this.password);
+                            axios
+                            .post("http://127.0.0.1:5000/api/login", {
+                                email: this.email,
+                                password: this.password,
+                            })
+                            .then((resp) => {
+                                console.log(resp);
+                                alert(resp.data.token);
+                            })
+                            .catch((error) => {
+                                console.error("Login error:", error);
+                                alert(
+                                    "Login failed: " + (error.response ? error.response.data.error : "Unknown error")
+                                );
+                            });
+                        }
+                    },
+                },
+                mounted() {
+                    console.log("Vue is mounted for login page");
+                },
+            });
+        </script>
+    </body>
 </html>
