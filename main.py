@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, request
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required
-import sentry_sdk
+# import sentry_sdk
 from models import db, Product, Sale, Purchase, User
 from configs.base_configs import Development
 from dotenv import load_dotenv 
@@ -16,11 +16,12 @@ app_config = Development()
 app.config.from_object(app_config)
 
 # Initialize Sentry for error tracking
-sentry_sdk.init(
-    dsn=app.config.get('SENTRY_DSN')
-)
+# sentry_sdk.init(
+#     dsn=app.config.get('SENTRY_DSN')
+# )
 
 # Initialize SQLAlchemy
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:NEWPAS4u.@localhost:5432/flask_api'
 db.init_app(app)
 
 # Configure JWT
