@@ -31,7 +31,7 @@ class Sale(db.Model):
             "id": self.id,
             "product_id": self.product_id,
             "quantity": self.quantity,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M") if self.created_at else None,
             "product": self.product.to_dict() if self.product else None
         }
 
@@ -49,7 +49,7 @@ class Purchase(db.Model):
             "id": self.id,
             "product_id": self.product_id,
             "quantity": self.quantity,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M") if self.created_at else None,
             "product": self.product.to_dict() if self.product else None
         }
 

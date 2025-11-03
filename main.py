@@ -150,7 +150,7 @@ def sales():
         db.session.add(s)
         db.session.commit()
         data_s["id"] = s.id
-        data_s["created_at"] = s.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        data_s["created_at"] = s.created_at.strftime("%Y-%m-%d %H:%M")
         # sales_list.append(sale) # commented out replaced by abovve five lines
         return jsonify(data_s), 201
     else:
@@ -178,7 +178,7 @@ def purchases():
         db.session.add(purch)
         db.session.commit()
         data_p["id"] = purch.id
-        data_p["created_at"] = purch.created_at.strftime("%Y-%m-%d %H:%M:%S")
+        data_p["created_at"] = purch.created_at.strftime("%Y-%m-%d %H:%M")
         # purchases_list.append(purchase) # commented out replaced by above five lines
     
         return jsonify(data_p), 201
