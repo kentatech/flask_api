@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required
 # import sentry_sdk
 from flask_cors import CORS
+from sqlalchemy import func
 from models import db, Product, Sale, Purchase, User
 from configs.base_configs import Development
 from dotenv import load_dotenv 
@@ -93,7 +94,7 @@ def get_users():
         return jsonify(error), 405
 
 @app.route('/api/products', methods=['GET', 'POST'])
-# @jwt_required()
+@jwt_required()
 def products():
     if request.method == 'GET':
         products = Product.query.all()
@@ -130,6 +131,21 @@ def sales():
             return jsonify({"error": "product_id must be an int"}), 400
         elif not is_number(data_s["quantity"]):
             return jsonify({"error": "quantity must be a number"}), 400
+        
+        #  calculate stock availability
+        product_id = data_s.get("product_id")
+        quantity = float(data_s.get("quantity", 0))
+        # Calculate current stock = purchases - sales
+        total_purchased = db.session.query(func.sum(Purchase.quantity)).filter_by(product_id=product_id).scalar() or 0
+        total_sold = db.session.query(func.sum(Sale.quantity)).filter_by(product_id=product_id).scalar() or 0
+        available_stock = total_purchased - total_sold
+        if available_stock <= 0:
+            return jsonify({"error": "No stock available"}), 400
+        if quantity > available_stock:
+            return jsonify({"error": f"Only {available_stock} items left"}), 400
+
+        # Create sale record
+        #instruct how to create sale record
         s = Sale(product_id=int(data_s["product_id"]), quantity=float(data_s["quantity"]))
         db.session.add(s)
         db.session.commit()
@@ -168,6 +184,60 @@ def purchases():
         return jsonify(data_p), 201
     else:
         return jsonify({"error": "Method not allowed"}), 405
+    
+@app.route("/api/stock", methods=["GET"])
+def stock_summary():
+    # Subquery for total purchases per product
+    purchase_subq = (
+        db.session.query(
+            Purchase.product_id,
+            func.coalesce(func.sum(Purchase.quantity), 0).label("total_purchased")
+        )
+        .group_by(Purchase.product_id)
+        .subquery()
+    )
+
+    # Subquery for total sales per product
+    sale_subq = (
+        db.session.query(
+            Sale.product_id,
+            func.coalesce(func.sum(Sale.quantity), 0).label("total_sold")
+        )
+        .group_by(Sale.product_id)
+        .subquery()
+    )
+
+    # Join subqueries to products
+    results = (
+        db.session.query(
+            Product.id,
+            Product.name,
+            (func.coalesce(purchase_subq.c.total_purchased, 0) -
+             func.coalesce(sale_subq.c.total_sold, 0)).label("available_quantity")
+        )
+        .outerjoin(purchase_subq, purchase_subq.c.product_id == Product.id)
+        .outerjoin(sale_subq, sale_subq.c.product_id == Product.id)
+        .all()
+    )
+
+    stock = [
+        {
+            "product_id": r.id,
+            "product_name": r.name,
+            "available_quantity": r.available_quantity
+        }
+        for r in results
+    ]
+    return jsonify(stock), 200
+
+
+    
+# build logout route that requires jwt token
+@app.route("/api/logout", methods=["POST"])
+@jwt_required()
+def logout():
+    return jsonify({"message": "Logout successful"}), 200
+
 
 if __name__ == "__main__":
     with app.app_context():

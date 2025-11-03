@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/static/favicon.gif" type="image/gif">
+    <title>Purchases page</title>
+    <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+            integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB"
+            crossorigin="anonymous"
+    />
+</head>
+<body>
+        <!-- purchases form for selecting product id associated with product and quantity(which will determine total cost) -->
+        <!-- now we make a table to display all purchases -->
+        <div id="app">
+                <nav class="navbar navbar-expand-lg bg-success">
+                <div class="container-fluid">
+                    <a class="navbar-brand" href="/templates/index.html">Inventory App</a>
+                    <button
+                        class="navbar-toggler"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#navbarNavDropdown"
+                        aria-controls="navbarNavDropdown"
+                        aria-expanded="false"
+                        aria-label="Toggle navigation"
+                    >
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    <div class="collapse navbar-collapse" id="navbarNavDropdown">
+                        <ul class="navbar-nav">
+                            <li class="nav-item">
+                                <a class="nav-link active" aria-current="page" href="#">Home</a>
+                            </li>
+                            <li class="nav-item">
+                            <a class="nav-link" href="/templates/products.html">Products</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/templates/sales.html">Sales</a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a
+                                    class="nav-link dropdown-toggle"
+                                    href="#"
+                                    role="button"
+                                    data-bs-toggle="dropdown"
+                                    aria-expanded="false"
+                                >
+                                    More
+                                </a>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="#">FAQ</a></li>
+                                    <li><a class="dropdown-item" href="#" @click.prevent="logout">LogOut</a></li>
+                                    <li><a class="dropdown-item" href="#">Contact Us</a></li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </nav>
+            <!-- Button trigger modal -->
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#staticBackdrop">
+            Add Purchase
+            </button>
+
+            <!-- Modal -->
+            <div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="staticBackdropLabel">Add Purchase</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                   <form @submit.prevent="addPurchase">
+                        <div class="mb-3">
+                            <label for="product" class="form-label">Product</label>
+                            <select class="form-select" v-model="newPurchase.product_id" id="product">
+                            <option disabled value="">-- Select Product --</option>
+                            <option v-for="product in products" :key="product.id" :value="product.id">
+                                {{ product.name }}
+                            </option>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="quantity" class="form-label">Quantity</label>
+                            <input type="number" class="form-control" v-model="newPurchase.quantity" id="quantity">
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Submit</button>
+                    </form>
+                </div>            
+                </div>
+            </div>
+            </div>
+            <table  class="table table-info table-hover table-sm table-bordered w-75 mx-auto">
+                <thead>
+                    <tr>
+                        <th>Purchase ID</th>
+                        <th>Product ID</th>
+                        <th>Quantity</th>
+                        <th>Created_at</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="purchase in purchases" :key="purchase['id']">
+                        <td>{{purchase["id"]}}</td>
+                        <td>{{purchase["product_id"]}}</td>
+                        <td>{{purchase["quantity"]}}</td>
+                        <td>{{purchase["created_at"]}}</td>
+                    </tr>
+                </tbody>
+            </table>
+         <script
+            src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"
+            integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g=="
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"
+        ></script>
+        <!-- <script src="//cdn.datatables.net/2.3.4/js/dataTables.min.js"></script> -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.7.16/vue.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.7.8/axios.min.js"></script>
+        <script
+            src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+            crossorigin="anonymous"
+        ></script>
+        <script>
+            new Vue({
+                el: "#app",
+                data: {
+                    purchases: [],
+                    products: [],   // store products here
+                    newPurchase: {
+                        product_id: '',
+                        quantity: 1,
+                    }
+                },
+                methods: {
+                    async fetchPurchases() {
+                        const headers = {headers: {Authorization: `Bearer ${localStorage.getItem("authToken")}`}};
+                        axios
+                        .get("http://127.0.0.1:5000/api/purchases", headers)
+                        .then((response) => {
+                            this.purchases = response.data.purchases || response.data;
+                            
+                        })
+                        .catch((error) => {
+                            console.error("Error fetching purchases:", error);
+                        });
+                    },
+                    async fetchProducts() {
+                    const headers = { headers: { Authorization: `Bearer ${localStorage.getItem("authToken")}` } };
+                    try {
+                        const response = await axios.get("http://127.0.0.1:5000/api/products", headers);
+                        this.products = response.data.products || response.data;
+                    } catch (error) {
+                        console.error("Error fetching products:", error);
+                    }
+                    },
+
+                    async addPurchase() {
+                    const headers = { headers: { Authorization: `Bearer ${localStorage.getItem("authToken")}` } };
+                    //save product_id and quantity to backend as integer
+                    this.newPurchase.product_id = parseInt(this.newPurchase.product_id);
+                    this.newPurchase.quantity = parseInt(this.newPurchase.quantity);
+                    // prevent zero,negative,letters or special chararcters
+                    if (!this.newPurchase.quantity || this.newPurchase.quantity <= 0) {
+                        alert("Quantity must be a positive number.");
+                        return;
+                    }
+                    try {
+                        
+                        await axios.post("http://127.0.0.1:5000/api/purchases", this.newPurchase, headers);
+                        this.fetchPurchases(); // refresh table
+                        this.newPurchase = { product_id: "", quantity: 1 }; // reset form
+                        const modal = bootstrap.Modal.getInstance(document.getElementById("staticBackdrop"));
+                        modal.hide();
+                    } catch (error) {
+                        console.error("Error adding purchase:", error);
+                    }
+                    },
+                    logout() {
+                        // Remove JWT token
+                        localStorage.removeItem("authToken");
+
+                        // Notify user
+                        alert("Successfully logged out!");
+
+                        // Redirect to login page
+                        window.location.href = "login.html";
+                    },
+                },
+                mounted() {
+                    if (localStorage.getItem("authToken") !== null) {
+                        //Call a method to fetch products directly
+                        this.fetchPurchases();
+                        this.fetchProducts(); // fetch products for dropdown
+
+                        // If token exists, redirect to products page
+                        // window.location.href = "products.html";
+                    } else {
+                        // console.log("No auth token found, stay on login page");
+                        window.location.href = "login.html";
+                    }
+                },
+            });
+        </script>
+
+   
+</body>
+</html>
