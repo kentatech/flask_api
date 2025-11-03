@@ -1,11 +1,11 @@
 from flask import Flask, jsonify, request
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required
-# import sentry_sdk
 from flask_cors import CORS
 from sqlalchemy import func
 from models import db, Product, Sale, Purchase, User
 from configs.base_configs import Development
 from dotenv import load_dotenv 
+# import sentry_sdk
 
 #load env variables
 load_dotenv()
@@ -229,7 +229,6 @@ def stock_summary():
         for r in results
     ]
     return jsonify(stock), 200
-
 
     
 # build logout route that requires jwt token
