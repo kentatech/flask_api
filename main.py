@@ -84,6 +84,34 @@ def login():
             token = create_access_token(identity = data["email"])
             return jsonify({"token": token}), 200  
 
+#dashboard route to display sales count - front end will use chart j.s to display sales count
+@app.route("/api/dashboard", methods=["GET"])
+# @jwt_required()
+def dashboard():
+    if request.method == "GET":
+        remaining_stock_query = (
+        db.session.query(
+            Product.id,
+            Product.name,
+            (func.coalesce(func.sum(Purchase.quantity), 0) 
+            - func.coalesce(func.sum(Sale.quantity), 0)).label("remaining_stock")
+        )
+        .join(Purchase, Product.id == Purchase.product_id)
+        .join(Sale, Product.id == Sale.product_id)
+        .group_by(Product.id, Product.name)
+        )
+        results = remaining_stock_query.all()
+        print('------------------------------------------------------------------',results)
+        data = []
+        labels = []
+        for r in results:
+            data.append(r.remaining_stock)
+            labels.append(r.name)
+        return jsonify({"data":data, "labels":labels}), 200
+    else:
+        error = {"error": "Method not allowed"}
+        return jsonify(error), 405
+
 @app.route("/api/users")
 def get_users():
     if request.method == "GET":
@@ -96,6 +124,8 @@ def get_users():
 @app.route('/api/products', methods=['GET', 'POST'])
 @jwt_required()
 def products():
+    # aadd logic to get if get fails redirect user to login
+    
     if request.method == 'GET':
         products = Product.query.all()
         return jsonify([prod.to_dict() for prod in products]), 200
