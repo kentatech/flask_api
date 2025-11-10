@@ -19,20 +19,35 @@ class Product(db.Model):
         }
 
 class Sale(db.Model):
-    __tablename__ = "sales"
+    __tablename__ = 'sales'
+
     id = db.Column(db.Integer, primary_key=True)
-    product_id = db.Column(db.Integer, db.ForeignKey('products.id'), nullable=False)
-    quantity = db.Column(db.Float, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.now)
-    product = db.relationship('Product', backref=db.backref('sales', lazy=True))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    # Relationship to SalesDetails
+    details = db.relationship('SalesDetails', backref='sale', lazy=True)
 
     def to_dict(self):
         return {
             "id": self.id,
+            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M"),
+            "details": [detail.to_dict() for detail in self.details]
+        }
+
+class SalesDetails(db.Model):
+    __tablename__ = 'sales_details'
+
+    id = db.Column(db.Integer, primary_key=True)
+    sale_id = db.Column(db.Integer, db.ForeignKey('sales.id'), nullable=False)
+    product_id = db.Column(db.Integer, nullable=False)
+    quantity = db.Column(db.Integer, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
             "product_id": self.product_id,
             "quantity": self.quantity,
-            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M") if self.created_at else None,
-            "product": self.product.to_dict() if self.product else None
+            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M")
         }
 
 
@@ -66,3 +81,4 @@ class User(db.Model):
             "username": self.username,
             "email": self.email
         }
+    

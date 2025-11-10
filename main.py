@@ -2,7 +2,7 @@ from flask import Flask, jsonify, request
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required
 from flask_cors import CORS
 from sqlalchemy import func
-from models import db, Product, Sale, Purchase, User
+from models import db, Product, Sale, Purchase, User , SalesDetails
 from configs.base_configs import Development
 from dotenv import load_dotenv 
 # import sentry_sdk
@@ -86,22 +86,25 @@ def login():
 
 #dashboard route to display sales count - front end will use chart j.s to display sales count
 @app.route("/api/dashboard", methods=["GET"])
-# @jwt_required()
+@jwt_required()
 def dashboard():
     if request.method == "GET":
+       # Calculate remaining stock per product
         remaining_stock_query = (
-        db.session.query(
-            Product.id,
-            Product.name,
-            (func.coalesce(func.sum(Purchase.quantity), 0) 
-            - func.coalesce(func.sum(Sale.quantity), 0)).label("remaining_stock")
-        )
-        .join(Purchase, Product.id == Purchase.product_id)
-        .join(Sale, Product.id == Sale.product_id)
-        .group_by(Product.id, Product.name)
+            db.session.query(
+                Product.id,
+                Product.name,
+                (
+                    func.coalesce(func.sum(Purchase.quantity), 0)
+                    - func.coalesce(func.sum(SalesDetails.quantity), 0)
+                ).label("remaining_stock")
+            )
+            .outerjoin(Purchase, Product.id == Purchase.product_id)
+            .outerjoin(SalesDetails, Product.id == SalesDetails.product_id)
+            .group_by(Product.id, Product.name)
         )
         results = remaining_stock_query.all()
-        print('------------------------------------------------------------------',results)
+        # print('------------------------------------------------------------------',results)
         data = []
         labels = []
         for r in results:
@@ -124,8 +127,8 @@ def get_users():
 @app.route('/api/products', methods=['GET', 'POST'])
 @jwt_required()
 def products():
-    # aadd logic to get if get fails redirect user to login
-    
+    # add logic to get if get fails redirect user to login
+
     if request.method == 'GET':
         products = Product.query.all()
         return jsonify([prod.to_dict() for prod in products]), 200
@@ -149,43 +152,336 @@ def products():
 @jwt_required()
 def sales():
     if request.method == "GET":
-        sales = Sale.query.all()
-        return jsonify([sale.to_dict() for sale in sales]), 200
-    elif request.method == "POST":
-        data_s = request.get_json()
-        if not data_s:
-            return jsonify({"error": "Request must be in json"}), 400
-        if "product_id" not in data_s or "quantity" not in data_s:
-            return jsonify({"error": "Ensure all fields are set: product_id, quantity"}), 400
-        elif not is_int(data_s["product_id"]):
-            return jsonify({"error": "product_id must be an int"}), 400
-        elif not is_number(data_s["quantity"]):
-            return jsonify({"error": "quantity must be a number"}), 400
-        
-        #  calculate stock availability
-        product_id = data_s.get("product_id")
-        quantity = float(data_s.get("quantity", 0))
-        # Calculate current stock = purchases - sales
-        total_purchased = db.session.query(func.sum(Purchase.quantity)).filter_by(product_id=product_id).scalar() or 0
-        total_sold = db.session.query(func.sum(Sale.quantity)).filter_by(product_id=product_id).scalar() or 0
-        available_stock = total_purchased - total_sold
-        if available_stock <= 0:
-            return jsonify({"error": "No stock available"}), 400
-        if quantity > available_stock:
-            return jsonify({"error": f"Only {available_stock} items left"}), 400
+        sales = Sale.query.order_by(Sale.created_at.desc()).all()
+        result = []
 
-        # Create sale record
-        #instruct how to create sale record
-        s = Sale(product_id=int(data_s["product_id"]), quantity=float(data_s["quantity"]))
-        db.session.add(s)
-        db.session.commit()
-        data_s["id"] = s.id
-        data_s["created_at"] = s.created_at.strftime("%Y-%m-%d %H:%M")
-        # sales_list.append(sale) # commented out replaced by abovve five lines
-        return jsonify(data_s), 201
-    else:
-        error = {"error": "Method not allowed"}
-        return jsonify(error), 405
+        for sale in sales:
+            details = (
+                db.session.query(SalesDetails, Product)
+                .join(Product, Product.id == SalesDetails.product_id)
+                .filter(SalesDetails.sale_id == sale.id)
+                .all()
+            )
+
+            sale_dict = {
+                "sale_id": sale.id,
+                "created_at": sale.created_at.strftime("%Y-%m-%d %H:%M"),
+                "items": []
+            }
+
+            for detail, product in details:
+                sale_dict["items"].append({
+                    "product_id": product.id,
+                    "product_name": product.name,
+                    "quantity": detail.quantity
+                })
+
+            result.append(sale_dict)
+
+        return jsonify(result), 200
+
+    elif request.method == "POST":
+        data = request.get_json()
+
+        # --- Handle bulk sales: { "items": [ { "product_id": 1, "quantity": 2 }, ... ] } ---
+        if "items" in data and isinstance(data["items"], list):
+            items = data["items"]
+            if not items:
+                return jsonify({"error": "No sale items provided"}), 400
+
+            try:
+                new_sale = Sale()
+                db.session.add(new_sale)
+                db.session.flush()  # get new_sale.id
+
+                responses = []
+
+                for item in items:
+                    product_id = item.get("product_id")
+                    quantity = item.get("quantity")
+
+                    if not is_int(product_id) or not is_number(quantity):
+                        return jsonify({"error": "product_id must be int and quantity must be number"}), 400
+
+                    product_id = int(product_id)
+                    quantity = float(quantity)
+
+                    # --- Stock check ---
+                    total_purchased = db.session.query(func.sum(Purchase.quantity)).filter_by(product_id=product_id).scalar() or 0
+                    total_sold = db.session.query(func.sum(SalesDetails.quantity)).filter_by(product_id=product_id).scalar() or 0
+                    available_stock = total_purchased - total_sold
+
+                    if available_stock <= 0:
+                        return jsonify({"error": f"No stock available for product {product_id}"}), 400
+                    if quantity > available_stock:
+                        return jsonify({"error": f"Only {available_stock} items left for product {product_id}"}), 400
+
+                    # --- Create sale detail ---
+                    sale_detail = SalesDetails(
+                        sale_id=new_sale.id,
+                        product_id=product_id,
+                        quantity=quantity
+                    )
+                    db.session.add(sale_detail)
+
+                    responses.append({
+                        "product_id": product_id,
+                        "quantity": quantity,
+                        "available_stock": available_stock
+                    })
+
+                db.session.commit()
+
+                return jsonify({
+                    "message": f"{len(items)} sales recorded successfully!",
+                    "sale_id": new_sale.id,
+                    "items": responses
+                }), 201
+
+            except Exception as e:
+                db.session.rollback()
+                return jsonify({"error": str(e)}), 500
+
+        # --- Handle single sale: { "product_id": 1, "quantity": 2 } ---
+        elif "product_id" in data and "quantity" in data:
+            if not is_int(data["product_id"]):
+                return jsonify({"error": "product_id must be an int"}), 400
+            if not is_number(data["quantity"]):
+                return jsonify({"error": "quantity must be a number"}), 400
+
+            product_id = int(data["product_id"])
+            quantity = float(data["quantity"])
+
+            total_purchased = db.session.query(func.sum(Purchase.quantity)).filter_by(product_id=product_id).scalar() or 0
+            total_sold = db.session.query(func.sum(SalesDetails.quantity)).filter_by(product_id=product_id).scalar() or 0
+            available_stock = total_purchased - total_sold
+
+            if available_stock <= 0:
+                return jsonify({"error": "No stock available"}), 400
+            if quantity > available_stock:
+                return jsonify({"error": f"Only {available_stock} items left"}), 400
+
+            try:
+                new_sale = Sale()
+                db.session.add(new_sale)
+                db.session.flush()
+
+                sale_detail = SalesDetails(
+                    sale_id=new_sale.id,
+                    product_id=product_id,
+                    quantity=quantity
+                )
+                db.session.add(sale_detail)
+                db.session.commit()
+
+                return jsonify({
+                    "id": new_sale.id,
+                    "product_id": product_id,
+                    "quantity": quantity,
+                    "created_at": new_sale.created_at.strftime("%Y-%m-%d %H:%M"),
+                    "available_stock": available_stock
+                }), 201
+            except Exception as e:
+                db.session.rollback()
+                return jsonify({"error": str(e)}), 500
+
+        else:
+            return jsonify({"error": "Invalid request format"}), 400
+    
+# @app.route("/api/sales", methods=["GET", "POST"])
+# @jwt_required()
+# def sales():
+#     if request.method == "GET":
+#         sales = Sale.query.order_by(Sale.created_at.desc()).all()
+#         result = []
+
+#         for sale in sales:
+#             details = (
+#                 db.session.query(SalesDetails, Product)
+#                 .join(Product, Product.id == SalesDetails.product_id)
+#                 .filter(SalesDetails.sale_id == sale.id)
+#                 .all()
+#             )
+
+#             sale_dict = {
+#                 "sale_id": sale.id,
+#                 "created_at": sale.created_at.strftime("%Y-%m-%d %H:%M"),
+#                 "items": []
+#             }
+
+#             for detail, product in details:
+#                 sale_dict["items"].append({
+#                     "product_id": product.id,
+#                     "product_name": product.name,
+#                     "quantity": detail.quantity
+#                 })
+#             # print("-------------------------------------------------------------------",sale_dict)
+#             result.append(sale_dict)
+
+#         return jsonify(result), 200
+
+#     elif request.method == "POST":
+#         data = request.get_json()
+
+#         # Handle bulk sale: { "items": [ { "product_id": 1, "quantity": 2 }, ... ] }
+#         if "items" in data and isinstance(data["items"], list):
+#             items = data["items"]
+#             if not items:
+#                 return jsonify({"error": "No sale items provided"}), 400
+
+#             try:
+#                 new_sale = Sale()
+#                 db.session.add(new_sale)
+#                 db.session.flush()  # get new_sale.id
+
+#                 for item in items:
+#                     product_id = item.get("product_id")
+#                     quantity = item.get("quantity")
+
+#                     if not is_int(product_id) or not is_number(quantity):
+#                         return jsonify({"error": "product_id must be int and quantity must be number"}), 400
+
+#                     product_id = int(product_id)
+#                     quantity = float(quantity)
+
+#                     # Stock availability check
+#                     total_purchased = db.session.query(func.sum(Purchase.quantity)).filter_by(product_id=product_id).scalar() or 0
+#                     total_sold = db.session.query(func.sum(SalesDetails.quantity)).filter_by(product_id=product_id).scalar() or 0
+#                     available_stock = total_purchased - total_sold
+
+#                     if available_stock <= 0:
+#                         return jsonify({"error": f"No stock available for product {product_id}"}), 400
+#                     if quantity > available_stock:
+#                         return jsonify({"error": f"Only {available_stock} items left for product {product_id}"}), 400
+
+#                     # Add sale detail
+#                     sale_detail = SalesDetails(
+#                         sale_id=new_sale.id,
+#                         product_id=product_id,
+#                         quantity=quantity
+#                     )
+#                     db.session.add(sale_detail)
+
+#                     db.session.commit()
+#                     return jsonify({"message": "Sales recorded successfully!", "sale_id": new_sale.id, "available_stock":available_stock}), 201
+
+#             except Exception as e:
+#                 db.session.rollback()
+#                 return jsonify({"error": str(e)}), 500
+
+#         # Handle single sale: { "product_id": 1, "quantity": 2 }
+#         elif "product_id" in data and "quantity" in data:
+#             if not is_int(data["product_id"]):
+#                 return jsonify({"error": "product_id must be an int"}), 400
+#             if not is_number(data["quantity"]):
+#                 return jsonify({"error": "quantity must be a number"}), 400
+
+#             product_id = int(data["product_id"])
+#             quantity = float(data["quantity"])
+
+#             # Stock validation
+#             total_purchased = db.session.query(func.sum(Purchase.quantity)).filter_by(product_id=product_id).scalar() or 0
+#             total_sold = db.session.query(func.sum(SalesDetails.quantity)).filter_by(product_id=product_id).scalar() or 0
+#             available_stock = total_purchased - total_sold
+
+#             if available_stock <= 0:
+#                 return jsonify({"error": "No stock available"}), 400
+#             if quantity > available_stock:
+#                 return jsonify({"error": f"Only {available_stock} items left"}), 400
+
+#             # Record single sale
+#             try:
+#                 new_sale = Sale()
+#                 db.session.add(new_sale)
+#                 db.session.flush()
+
+#                 sale_detail = SalesDetails(
+#                     sale_id=new_sale.id,
+#                     product_id=product_id,
+#                     quantity=quantity
+#                 )
+#                 db.session.add(sale_detail)
+#                 db.session.commit()
+
+#                 return jsonify({
+#                     "id": new_sale.id,
+#                     "product_id": product_id,
+#                     "quantity": quantity,
+#                     "created_at": new_sale.created_at.strftime("%Y-%m-%d %H:%M"),
+#                     "available_stock": available_stock
+#                 }), 201
+#             except Exception as e:
+#                 db.session.rollback()
+#                 return jsonify({"error": str(e)}), 500
+
+#         # Invalid request format
+#         else:
+#             return jsonify({"error": "Invalid request format"}), 400
+        # data_s = request.get_json()
+        # if not data_s:
+        #     return jsonify({"error": "Request must be in json"}), 400
+        # if "product_id" not in data_s or "quantity" not in data_s:
+        #     return jsonify({"error": "Ensure all fields are set: product_id, quantity"}), 400
+        # elif not is_int(data_s["product_id"]):
+        #     return jsonify({"error": "product_id must be an int"}), 400
+        # elif not is_number(data_s["quantity"]):
+        #     return jsonify({"error": "quantity must be a number"}), 400
+        
+        # #  calculate stock availability
+        # product_id = data_s.get("product_id")
+        # quantity = float(data_s.get("quantity", 0))
+        # # Calculate current stock = purchases - sales
+        # total_purchased = db.session.query(func.sum(Purchase.quantity)).filter_by(product_id=product_id).scalar() or 0
+        # total_sold = db.session.query(func.sum(Sale.quantity)).filter_by(product_id=product_id).scalar() or 0
+        # available_stock = total_purchased - total_sold
+        # if available_stock <= 0:
+        #     return jsonify({"error": "No stock available"}), 400
+        # if quantity > available_stock:
+        #     return jsonify({"error": f"Only {available_stock} items left"}), 400
+
+        # # Create sale record
+        # #instruct how to create sale record
+        # s = Sale(product_id=int(data_s["product_id"]), quantity=float(data_s["quantity"]))
+        # db.session.add(s)
+        # db.session.commit()
+        # data_s["id"] = s.id
+        # data_s["created_at"] = s.created_at.strftime("%Y-%m-%d %H:%M")
+        # # sales_list.append(sale) # commented out replaced by abovve five lines
+        # return jsonify(data_s), 201
+    # else:
+    #     error = {"error": "Method not allowed"}
+    #     return jsonify(error), 405
+# @app.route("/api/stock", methods=["GET"])
+# @jwt_required()
+# def stock():
+#     products = Product.query.all()
+#     stock_data = []
+
+#     for product in products:
+#         # calculate available stock exactly like in your sales route
+#         total_purchased = (
+#             db.session.query(func.sum(Purchase.quantity))
+#             .filter_by(product_id=product.id)
+#             .scalar()
+#             or 0
+#         )
+#         total_sold = (
+#             db.session.query(func.sum(SalesDetails.quantity))
+#             .filter_by(product_id=product.id)
+#             .scalar()
+#             or 0
+#         )
+
+#         available_stock = total_purchased - total_sold
+
+#         stock_data.append({
+#             "product_id": product.id,
+#             "name": product.name,
+#             "available_quantity": available_stock
+#         })
+
+#     return jsonify(stock_data), 200
+
         
 @app.route("/api/purchases", methods=["GET", "POST"])
 @jwt_required()
@@ -217,7 +513,7 @@ def purchases():
     
 @app.route("/api/stock", methods=["GET"])
 def stock_summary():
-    # Subquery for total purchases per product
+     # --- Total purchased per product ---
     purchase_subq = (
         db.session.query(
             Purchase.product_id,
@@ -227,37 +523,43 @@ def stock_summary():
         .subquery()
     )
 
-    # Subquery for total sales per product
-    sale_subq = (
+    # --- Total sold per product (from SalesDetails now) ---
+    sales_subq = (
         db.session.query(
-            Sale.product_id,
-            func.coalesce(func.sum(Sale.quantity), 0).label("total_sold")
+            SalesDetails.product_id,
+            func.coalesce(func.sum(SalesDetails.quantity), 0).label("total_sold")
         )
-        .group_by(Sale.product_id)
+        .group_by(SalesDetails.product_id)
         .subquery()
     )
 
-    # Join subqueries to products
-    results = (
+    # --- Join with products to get names ---
+    query = (
         db.session.query(
-            Product.id,
+            Product.id.label("product_id"),
             Product.name,
-            (func.coalesce(purchase_subq.c.total_purchased, 0) -
-             func.coalesce(sale_subq.c.total_sold, 0)).label("available_quantity")
+            (
+                func.coalesce(purchase_subq.c.total_purchased, 0)
+                - func.coalesce(sales_subq.c.total_sold, 0)
+            ).label("available_quantity")
         )
-        .outerjoin(purchase_subq, purchase_subq.c.product_id == Product.id)
-        .outerjoin(sale_subq, sale_subq.c.product_id == Product.id)
-        .all()
+        .outerjoin(purchase_subq, Product.id == purchase_subq.c.product_id)
+        .outerjoin(sales_subq, Product.id == sales_subq.c.product_id)
+        .order_by(Product.name)
     )
 
+    results = query.all()
+
+    # --- Convert to JSON-friendly list ---
     stock = [
         {
-            "product_id": r.id,
-            "product_name": r.name,
-            "available_quantity": r.available_quantity
+            "product_id": r.product_id,
+            "name": r.name,
+            "available_quantity": float(r.available_quantity or 0)
         }
         for r in results
     ]
+
     return jsonify(stock), 200
 
     
