@@ -6,6 +6,7 @@ from models import db, Product, Sale, Purchase, User , SalesDetails
 from configs.base_configs import Development
 from dotenv import load_dotenv 
 from collections import defaultdict
+from datetime import timedelta
 # import sentry_sdk
 
 #load env variables
@@ -30,8 +31,10 @@ db.init_app(app)
 
 # Configure JWT
 jwt = JWTManager(app)
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(minutes=15)
 
 # Helper functions
+# create a seperate file and call it here
 def is_int(value):
     try:
         int(value)
@@ -192,6 +195,58 @@ def products():
 @jwt_required()
 def sales():
     if request.method == "GET":
+        # 1) Query Sale + SalesDetails + Product
+        results = (
+            db.session.query(Sale, SalesDetails, Product)
+            .join(SalesDetails, SalesDetails.sale_id == Sale.id)
+            .join(Product, Product.id == SalesDetails.product_id)
+            .order_by(Sale.created_at.desc())
+            .all()
+        )
+
+        # 2) Compute total sale amount per sale_id (selling_price × quantity)
+        totals_sale = (
+            db.session.query(
+                SalesDetails.sale_id,
+                func.sum(SalesDetails.quantity * Product.selling_price).label("total_sale")
+            )
+            .join(Product, Product.id == SalesDetails.product_id)
+            .group_by(SalesDetails.sale_id)
+            .all()
+        )
+        totals_sale_dict = { sale_id: total for sale_id, total in totals_sale }
+
+        # 3) Group results by sale.id
+        sales_group = defaultdict(list)
+        for sale, detail, product in results:
+            sales_group[sale.id].append((sale, detail, product))
+
+        # 4) Build response including items and total_sale
+        response = []
+        for sale_id, grouped in sales_group.items():
+            sale, _, _ = grouped[0]
+
+            total_sale = totals_sale_dict.get(sale_id, 0) or 0
+
+            sale_dict = {
+                "sale_id": sale.id,
+                "created_at": sale.created_at.strftime("%Y-%m-%d %H:%M"),
+                "total_sale": total_sale,
+                "items": [
+                    {
+                        "product_id": product.id,
+                        "product_name": product.name,
+                        "quantity": detail.quantity,
+                        "unit_selling_price": product.selling_price,
+                        "subtotal": detail.quantity * product.selling_price
+                    }
+                    for _, detail, product in grouped
+                ]
+            }
+            response.append(sale_dict)
+
+        return jsonify(response), 200
+        #My solution 1
         # sales = Sale.query.order_by(Sale.created_at.desc()).all()
         # result = []
 
@@ -217,39 +272,41 @@ def sales():
         #         })
 
         #     result.append(sale_dict)
-        results = (
-        db.session.query(Sale, SalesDetails, Product)
-        .join(SalesDetails, SalesDetails.sale_id == Sale.id)
-        .join(Product, Product.id == SalesDetails.product_id)
-        .order_by(Sale.created_at.desc())
-        .all())
 
-        # Grouping results by sale
-        sales_group = defaultdict(list)
-        for sale, detail, product in results:
-            sales_group[sale.id].append((sale, detail, product))
+        # #solution 2 from edwin
+        # results = (
+        # db.session.query(Sale, SalesDetails, Product)
+        # .join(SalesDetails, SalesDetails.sale_id == Sale.id)
+        # .join(Product, Product.id == SalesDetails.product_id)
+        # .order_by(Sale.created_at.desc())
+        # .all())
 
-        result = [
-            {
-                "sale_id": sale.id,
-                "created_at": sale.created_at.strftime("%Y-%m-%d %H:%M"),
-                "items": [
-                    {
-                        "product_id": product.id,
-                        "product_name": product.name,
-                        "quantity": detail.quantity
-                    }
-                    for _, detail, product in grouped
-                ]
-            }
-            for sale_id, grouped in sales_group.items()
-            for sale, _, _ in [grouped[0]]  # Extract sale once per group
-        ]
+        # # Grouping results by sale
+        # sales_group = defaultdict(list)
+        # for sale, detail, product in results:
+        #     sales_group[sale.id].append((sale, detail, product))
+
+        # result = [
+        #     {
+        #         "sale_id": sale.id,
+        #         "created_at": sale.created_at.strftime("%Y-%m-%d %H:%M"),
+        #         "items": [
+        #             {
+        #                 "product_id": product.id,
+        #                 "product_name": product.name,
+        #                 "quantity": detail.quantity
+        #             }
+        #             for _, detail, product in grouped
+        #         ]
+        #     }
+        #     for sale_id, grouped in sales_group.items()
+        #     for sale, _, _ in [grouped[0]]  # Extract sale once per group
+        # ]
 
 
-        print("-------------------------------------------------------------------",result)
+        # # print("-------------------------------------------------------------------",result)
         
-        return jsonify(result), 200
+        # return jsonify(result), 200
 
     elif request.method == "POST":
         data = request.get_json()
