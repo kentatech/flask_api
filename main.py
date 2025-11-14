@@ -7,6 +7,7 @@ from configs.base_configs import Development
 from dotenv import load_dotenv 
 from collections import defaultdict
 from datetime import timedelta
+from utilities.validators import is_int, is_number
 # import sentry_sdk
 
 #load env variables
@@ -33,21 +34,6 @@ db.init_app(app)
 jwt = JWTManager(app)
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(minutes=15)
 
-# Helper functions
-# create a seperate file and call it here
-def is_int(value):
-    try:
-        int(value)
-        return True
-    except(ValueError, TypeError):
-        return False
-    
-def is_number(value):
-    try:
-        float(value)
-        return True
-    except(ValueError, TypeError):
-        return False
 
 @app.route("/",methods=['GET'])
 def home():
