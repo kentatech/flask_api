@@ -50,6 +50,30 @@ class SalesDetails(db.Model):
             "created_at": self.created_at.strftime("%Y-%m-%d %H:%M")
         }
 
+class Payment(db.Model):
+    __tablename__ = "payments"
+
+    id = db.Column(db.Integer, primary_key=True)
+    model = db.Column(db.String(80), nullable=False)
+    sale_id = db.Column(db.Integer, db.ForeignKey('sales.id'), nullable=False)
+    mpesa_ref = db.Column(db.String(120), nullable=True)
+    trans_amount = db.Column(db.Integer, nullable=False)
+    trans_name = db.Column(db.String(120), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+    sale = db.relationship('Sale', backref=db.backref('payments', lazy=True))
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "model": self.model,
+            "sale_id": self.sale_id,
+            "mpesa_ref": self.mpesa_ref,
+            "trans_amount": self.trans_amount,
+            "trans_name": self.trans_name,
+            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M") if self.created_at else None
+        }
+
 
 class Purchase(db.Model):
     __tablename__ = "purchases"
