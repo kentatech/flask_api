@@ -21,10 +21,6 @@ CORS(app)
 app_config = Development()
 app.config.from_object(app_config)
 
-# Initialize Sentry for error tracking
-# sentry_sdk.init(
-#     dsn=app.config.get('SENTRY_DSN')
-# )
 
 # Initialize SQLAlchemy
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:NEWPAS4u.@localhost:5432/flask_api'
@@ -339,8 +335,8 @@ def sales():
                 db.session.rollback()
                 return jsonify({"error": str(e)}), 500
 
-        else:
-            return jsonify({"error": "Invalid request format"}), 400
+    else:
+        return jsonify({"error": "Invalid request format"}), 400
         
 @app.route("/api/purchases", methods=["GET", "POST"])
 @jwt_required()
