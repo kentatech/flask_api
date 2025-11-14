@@ -54,7 +54,7 @@ class Payment(db.Model):
     __tablename__ = "payments"
 
     id = db.Column(db.Integer, primary_key=True)
-    model = db.Column(db.String(80), nullable=False)
+    mode = db.Column(db.String(80), nullable=False)
     sale_id = db.Column(db.Integer, db.ForeignKey('sales.id'), nullable=False)
     mpesa_ref = db.Column(db.String(120), nullable=True)
     trans_amount = db.Column(db.Integer, nullable=False)
@@ -66,7 +66,7 @@ class Payment(db.Model):
     def to_dict(self):
         return {
             "id": self.id,
-            "model": self.model,
+            "mode": self.mode,
             "sale_id": self.sale_id,
             "mpesa_ref": self.mpesa_ref,
             "trans_amount": self.trans_amount,
