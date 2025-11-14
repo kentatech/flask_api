@@ -232,67 +232,7 @@ def sales():
             response.append(sale_dict)
 
         return jsonify(response), 200
-        #My solution 1
-        # sales = Sale.query.order_by(Sale.created_at.desc()).all()
-        # result = []
-
-        # for sale in sales:
-        #     details = (
-        #         db.session.query(SalesDetails, Product)
-        #         .join(Product, Product.id == SalesDetails.product_id)
-        #         .filter(SalesDetails.sale_id == sale.id)
-        #         .all()
-        #     )
-
-        #     sale_dict = {
-        #         "sale_id": sale.id,
-        #         "created_at": sale.created_at.strftime("%Y-%m-%d %H:%M"),
-        #         "items": []
-        #     }
-
-        #     for detail, product in details:
-        #         sale_dict["items"].append({
-        #             "product_id": product.id,
-        #             "product_name": product.name,
-        #             "quantity": detail.quantity
-        #         })
-
-        #     result.append(sale_dict)
-
-        # #solution 2 from edwin
-        # results = (
-        # db.session.query(Sale, SalesDetails, Product)
-        # .join(SalesDetails, SalesDetails.sale_id == Sale.id)
-        # .join(Product, Product.id == SalesDetails.product_id)
-        # .order_by(Sale.created_at.desc())
-        # .all())
-
-        # # Grouping results by sale
-        # sales_group = defaultdict(list)
-        # for sale, detail, product in results:
-        #     sales_group[sale.id].append((sale, detail, product))
-
-        # result = [
-        #     {
-        #         "sale_id": sale.id,
-        #         "created_at": sale.created_at.strftime("%Y-%m-%d %H:%M"),
-        #         "items": [
-        #             {
-        #                 "product_id": product.id,
-        #                 "product_name": product.name,
-        #                 "quantity": detail.quantity
-        #             }
-        #             for _, detail, product in grouped
-        #         ]
-        #     }
-        #     for sale_id, grouped in sales_group.items()
-        #     for sale, _, _ in [grouped[0]]  # Extract sale once per group
-        # ]
-
-
-        # # print("-------------------------------------------------------------------",result)
         
-        # return jsonify(result), 200
 
     elif request.method == "POST":
         data = request.get_json()
