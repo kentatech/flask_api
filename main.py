@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from collections import defaultdict
 from datetime import timedelta
 from utilities.validators import is_int, is_number
+import requests
 # import sentry_sdk
 
 #load env variables
@@ -139,6 +140,38 @@ def dashboard():
     else:
         error = {"error": "Method not allowed"}
         return jsonify(error), 405
+
+
+# @app.route('/api/mpesa/callback', methods=['POST', 'GET'])
+# def mpesa_callback():
+#     if request.method == 'GET':
+        
+#         # Useful for testing in browser
+#         return "Callback endpoint is alive", 200
+
+#     data = request.get_json(force=True)  # force=True ensures parsing even if header is missing
+#     print("Raw callback data:---------------------------------------------------------------------------------", data) 
+#     if not data:
+#         return jsonify({"error": "No JSON received"}), 400
+
+#     stk_callback = data.get("Body", {}).get("stkCallback", {})
+#     result_code = stk_callback.get("ResultCode")
+#     result_desc = stk_callback.get("ResultDesc")
+
+#     metadata = stk_callback.get("CallbackMetadata", {}).get("Item", [])
+#     amount = next((item["Value"] for item in metadata if item["Name"] == "Amount"), None)
+#     receipt = next((item["Value"] for item in metadata if item["Name"] == "MpesaReceiptNumber"), None)
+#     phone = next((item["Value"] for item in metadata if item["Name"] == "PhoneNumber"), None)
+
+#     print(f"Callback received: Result={result_code} ({result_desc}), "
+#           f"Amount={amount}, Receipt={receipt}, Phone={phone}")
+
+#     return jsonify({"status": "callback received"}), 200
+
+
+
+
+
 
 @app.route("/api/users")
 def get_users():
